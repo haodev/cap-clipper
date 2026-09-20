@@ -1,0 +1,32 @@
+# Telehealth / affiliate / CTA cues. Drives promo_score, not coord_score.
+# strong = explicit commercial call to action or price. weak = contextual.
+# Avoid substrings that hide inside common words (e.g. "hers" inside "others").
+strong:
+  - link in bio
+  - click here
+  - use code
+  - discount code
+  - promo code
+  - coupon
+  - order now
+  - dm me
+  - dm us
+  - shop now
+  - start today
+  - in stock
+  - "$199"
+  - "/mo"
+  - per month
+  - a month for
+  - "% off"
+weak:
+  - compounded
+  - telehealth
+  - weight loss clinic
+  - online clinic
+  - free consultation
+  - hims
+  - ro.co
+  - noom
+  - affiliate
+  - sponsored
