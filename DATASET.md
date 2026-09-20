@@ -1,7 +1,17 @@
 # Ozempic and weight-loss drugs: dataset
 
-Every tweet in the HopHacks X firehose whose **text** names a weight-loss drug, for the full
-month the sponsor provided.
+Every tweet **in the 396 files supplied for HopHacks** whose text names a weight-loss drug.
+The supplied files cover 17 Aug to 17 Sep 2026. How they were collected, and what share of
+all posts about these drugs they contain, is not known to us, so nothing here should be read
+as describing X as a whole.
+
+**How to read this file.** Three kinds of statement are kept apart:
+*measured* (counted in a stated population, either the 396 supplied files, the 24,894-row raw
+extract or the 23,058-tweet dataset, and repeatable),
+*our choice* (a decision we made while building the dataset), and
+*not verified* (something we have not checked, or cannot check with these fields).
+
+Measured across the dataset itself, meaning all 23,058 tweets:
 
 | | |
 | --- | --- |
@@ -13,7 +23,7 @@ month the sponsor provided.
 | Retweets | 56.5% (replies 2.4%, quotes 10.4%, with media 26.1%) |
 | File | `data/ozempic_dataset.csv` (12.3 MB) |
 
-Searched from 395,352,258 rows across 396 source files.
+Measured: searched from 395,352,258 rows across the 396 supplied files.
 
 ## Processing steps
 
@@ -24,10 +34,11 @@ unique tweets. We then tested a temporary copy of each tweet's text with URLs an
 removed. This excluded 214 tweets whose only mention was inside a username, and none whose
 only mention was inside a link, producing the final 23,058-tweet dataset. The original tweet
 text was preserved unchanged. All languages, retweets, replies, quotes and low- or
-zero-engagement posts were retained; no engagement threshold was applied, so 70% of the
-dataset has zero likes. Identical wording posted under different tweet IDs remains separate:
-after lowercasing, 903 texts appear more than once across 11,675 rows (898 texts and 11,659
-rows on an exact match), mostly retweets. Drug and post-type flags were added before
+zero-engagement posts were retained; no engagement threshold was applied, so 70.0% of the
+23,058 dataset tweets have zero likes, with no missing values. Identical wording posted under
+different tweet IDs remains separate: within the dataset, after lowercasing, 903 texts appear
+more than once, covering 11,675 of the 23,058 rows (898 texts and 11,659 rows on an exact
+match); 99.0% of those 11,675 rows are retweets. Drug and post-type flags were added before
 exporting the CSV.
 
 ## Files
@@ -47,7 +58,7 @@ they are large, intermediate, or rebuildable in seconds:
 | `ozempic_by_day.csv` | 32 rows, one per day: all tweets that day, topic tweets, rate per million |
 | `ozempic_excluded.csv` | 214 tweets whose only drug mention was inside a username, e.g. `@OzempicPigMan` |
 | `ozempic_tweets.parquet` / `.csv` | The raw extract, 24,894 rows, including repeat observations of the same tweet |
-| `day_totals.csv` | Rows and distinct tweets per day across the whole firehose (the denominators) |
+| `day_totals.csv` | Rows and distinct tweets per day across all supplied files (the denominators) |
 | `search.json`, `progress.csv` | The search pattern used, and which of the 396 files were processed |
 | `capclipper_data/all_files/` | The 51.9 GB source archive |
 
@@ -59,17 +70,18 @@ they are large, intermediate, or rebuildable in seconds:
 | --- | --- |
 | `id` | Tweet id |
 | `author_id` | Account id (numeric; no usernames in this dataset) |
-| `created_at` | When the tweet was posted (UTC) |
-| `date`, `hour` | Date and hour of `created_at`, for grouping |
-| `lang` | Language code recorded by the collector |
-| `body` | The tweet text |
+| `created_at` | Posting time as supplied (UTC). We did not verify it against X |
+| `date`, `hour` | Date and hour of `created_at`, added by us for grouping |
+| `lang` | Language code as supplied. How it was determined is not documented, and we did not check its accuracy |
+| `body` | The tweet text, exactly as supplied |
 
 **Which drug is named** (all computed on the text after links and @usernames are removed)
 
 `has_ozempic`, `has_wegovy`, `has_semaglutide`, `has_mounjaro`, `has_zepbound`,
 `has_tirzepatide`, `has_retatrutide`, `has_glp1`, `has_weight_loss_drug`
 
-A tweet can name several. Counts: ozempic 12,473, glp1 5,139, mounjaro 3,948,
+A tweet can name several, so these counts overlap and do not sum to the dataset size.
+Measured across the 23,058 dataset tweets: ozempic 12,473, glp1 5,139, mounjaro 3,948,
 semaglutide 783, weight_loss_drug 715, retatrutide 687, tirzepatide 644, wegovy 644,
 zepbound 214.
 
@@ -81,17 +93,26 @@ zepbound 214.
 | `drug_in_username` | The name also appears in an @username |
 | `drug_in_link` | The name also appears inside a link |
 
-**Type of post**: `is_rt` (starts with `RT @`), `is_reply`, `is_quote`, `has_media`.
+**Type of post** (added by us): `is_rt`, `is_reply`, `is_quote`, `has_media`.
 
-**Engagement, at the last time the tweet was observed**: `like_count`, `reply_count`,
-`retweet_count`, `quote_count`, `views_count`, `bookmarks_count`.
+`is_rt` is a rule, not a supplied field: the text begins with `RT @`. That is the usual form
+of a re-share, but we did not confirm it against X, and a tweet quoting that prefix in its own
+words would be counted as a retweet. `is_reply` and `is_quote` come from
+`reply_to_status_id` and `quoting_id` being present.
 
-**Threading**: `reply_to_status_id`, `reply_to_user_id`, `conversation_id`, `quoting_id`.
+**Engagement counts as supplied, at the latest observation we have**: `like_count`,
+`reply_count`, `retweet_count`, `quote_count`, `views_count`, `bookmarks_count`. How these
+were obtained, and how current they were, is not documented.
 
-**Collection details**: `version` (when this observation was recorded), `first_seen` (first
-observation), `snapshots` (how many times the tweet was observed; 1,210 tweets were observed
-more than once), `source_file`, `added_at`, `media`, and the collector's own fields
-`source`, `poll`, `embed`, `synced`, `embedded`.
+**Threading, as supplied**: `reply_to_status_id`, `reply_to_user_id`, `conversation_id`,
+`quoting_id`.
+
+**Observation fields**: `version` (the timestamp supplied with that observation),
+`first_seen` (the earliest `version` we hold for the tweet), `snapshots` (how many
+observations of it appear in our extract; measured: 1,210 tweets have more than one, and
+21,848 have exactly one), `source_file` (added by us), plus `added_at`, `media`, `source`,
+`poll`, `embed`, `synced` and `embedded` exactly as supplied. We do not know what `synced`
+and `embedded` mean.
 
 ## What counts as a topic tweet
 
@@ -179,19 +200,25 @@ five files at a time, records progress after every 20, and can resume after an i
 It refuses to resume if the search pattern has changed, so two different searches can never
 be mixed in one output.
 
-Timings on a laptop: about 25 minutes including downloads, about 3 minutes from local files.
+Timings measured on the machine used to build this dataset (a Windows laptop, five files
+processed at a time): about 25 minutes including downloads, about 3 minutes from local files.
+Your hardware and connection will differ.
 
 **The 51.9 GB source archive is not in this repository.** Only the scripts and the finished
 dataset are.
 
 ## How it was checked
 
-- **Counted independently:** for 9 randomly chosen source files, tweets were counted directly
-  with a plain text search and compared with the extract. All 9 matched exactly.
+- **Counted independently:** in 9 randomly chosen supplied files, matching tweets were
+  counted directly with a plain text search and compared with our extract. All 9 matched
+  exactly. This checks that the extraction loses nothing; it says nothing about whether the
+  search terms are the right ones.
 - **Repeatable:** rerunning the whole pipeline produces an identical dataset and a 32-row
   daily table.
-- **All 396 files processed:** recorded in `progress.csv`, none missing.
+- **All 396 supplied files processed:** recorded in `progress.csv`, none missing.
 - **Every row verified** to have `drug_in_text = true`.
+- **Not checked:** whether the matched tweets are genuinely about the drugs, how many
+  relevant tweets the terms miss, and whether any supplied field is accurate.
 
 ## Known limitations
 
@@ -204,16 +231,33 @@ dataset are.
   places, but those mentions have not been extracted, and a place named in a tweet does not
   establish where its author lives or posted from. Language and posting time do not
   establish location either.
-- **The posting app is unknown**: the `source` column is empty in every row, as are `poll`
-  and `embed`.
-- **Engagement is late and nearly static.** A tweet is usually first observed about a day
-  after posting, and repeat observations barely change, so the growth of a single tweet
-  cannot be measured. Counts describe reach, not speed.
-- **Coverage is uneven.** The collector captured far more in August than in September, so
-  raw daily counts are not comparable. Compare rates instead: `build_topic_dataset.py`
-  writes `ozempic_by_day.csv` locally with a `per_million` column for exactly this.
-- **Retweets are included** (56.5%). They copy another tweet's text, so exclude them with
-  `is_rt = false` when analysing what people wrote themselves.
+- **The `source`, `poll` and `embed` columns are empty** in every row of this dataset. All
+  396 supplied files share one identical column set, so no posting-app information is
+  available to us. Why those fields are empty is not known.
+- **Engagement counts cannot show growth.** Measured across all 23,058 dataset tweets, every
+  one of which has both timestamps: the gap between `created_at` and the first observation
+  has a median of 23.8 hours (25th percentile 9.1, 75th 45.8), and 17.9% are first observed
+  within 6 hours. 21,848 of the 23,058 (94.8%) appear only once in our extract. Among the
+  1,210 that appear two or more times, the view count is unchanged for 42.4%, and the median
+  gain is 2 views (90th percentile 1,696). So these counts can be compared between tweets,
+  but they do not describe how fast a tweet grew. We do not know why observations are spaced
+  this way.
+- **The supplied files are not evenly spread over the month.** Measured across the 23,058
+  dataset tweets: 21,254 are dated in August and 1,804 in September, and the daily
+  totals fall sharply after 31 August. Raw daily counts are therefore not comparable across
+  the month; compare rates instead (`build_topic_dataset.py` writes `ozempic_by_day.csv`
+  locally with a `per_million` column). **Not verified:** whether this reflects collection,
+  storage or anything about real posting activity. It should not be read as interest
+  declining.
+- **Retweets are included**: 56.5% of the 23,058 dataset tweets, by the `RT @` rule above.
+  Measured within the dataset: 11,675 of those 23,058 rows (50.6%) have lowercased text that
+  also appears under another tweet id, and 99.0% of those 11,675 are retweets. So repeated
+  wording in this dataset mostly reflects re-sharing, not separate accounts independently
+  writing the same thing. Exclude retweets with `is_rt = false` when studying what people
+  wrote themselves.
+- **Not a representative sample.** We cannot say what fraction of all posts about these
+  drugs the supplied files contain, and the accounts here are not a sample of any
+  population. Counts describe this dataset only.
 - **No usernames**, only numeric account ids, and no follower counts or profile information.
 - **1,309 source rows have no timestamp.** They are counted in the 395,352,258 total but
   cannot appear in any per-day figure, so daily totals sum to 395,350,949.
