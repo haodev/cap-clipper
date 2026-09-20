@@ -15,6 +15,21 @@ month the sponsor provided.
 
 Searched from 395,352,258 rows across 396 source files.
 
+## Processing steps
+
+We searched all 396 source files, containing 395,352,258 rows, using case-insensitive drug
+terms and spelling variants documented below. This produced 24,894 matching rows. We
+deduplicated by tweet ID, keeping the latest matching snapshot by `version`, leaving 23,272
+unique tweets. We then tested a temporary copy of each tweet's text with URLs and @usernames
+removed. This excluded 214 tweets whose only mention was inside a username, and none whose
+only mention was inside a link, producing the final 23,058-tweet dataset. The original tweet
+text was preserved unchanged. All languages, retweets, replies, quotes and low- or
+zero-engagement posts were retained; no engagement threshold was applied, so 70% of the
+dataset has zero likes. Identical wording posted under different tweet IDs remains separate:
+after lowercasing, 903 texts appear more than once across 11,675 rows (898 texts and 11,659
+rows on an exact match), mostly retweets. Drug and post-type flags were added before
+exporting the CSV.
+
 ## Files
 
 This repository holds one data file:
@@ -197,6 +212,8 @@ dataset are.
 - **Retweets are included** (56.5%). They copy another tweet's text, so exclude them with
   `is_rt = false` when analysing what people wrote themselves.
 - **No usernames**, only numeric account ids, and no follower counts or profile information.
+- **1,309 source rows have no timestamp.** They are counted in the 395,352,258 total but
+  cannot appear in any per-day figure, so daily totals sum to 395,350,949.
 - **An interrupted extraction can need a clean restart.** `extract_topic_all_days.py` saves
   its progress after every 20 files it finishes. Stopping it normally is safe: it resumes
   from the last checkpoint and simply redoes up to 19 files. But the checkpoint writes three
