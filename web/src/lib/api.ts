@@ -1,5 +1,7 @@
 export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+export const DAY_DEMO = "2026-08-17";
+
 export type Scores = {
   cap_score: number;
   promo_score: number;
@@ -41,8 +43,8 @@ export type Narrative = {
   unique_authors: number;
   amplification_ratio: number;
   mean_sentiment: number;
-  peak_hour: string;
-  hourly: number[];
+  peak_hour?: string | null;
+  hourly?: number[];
   top_example: string;
 };
 
@@ -56,8 +58,8 @@ export type Claim = {
   burstiness: number;
   span_minutes: number;
   first_seen: string;
-  peak_hour: string;
-  hourly: number[];
+  peak_hour?: string;
+  hourly?: number[];
   narratives: string[];
   mean_sentiment: number;
 };
@@ -110,10 +112,12 @@ export type Hour = {
 
 export type Meta = {
   topic: string;
-  day_utc: string;
+  day_utc: string | null;
+  start_utc?: string | null;
+  end_utc?: string | null;
   source: string;
-  firehose_rows_scanned: number;
-  english_rows: number;
+  firehose_rows_scanned: number | null;
+  english_rows: number | null;
   slice_rows: number;
   originals: number;
   retweets: number;
@@ -129,24 +133,31 @@ export type Payload = {
   feed: Tweet[];
 };
 
+export type Scope = { kind: "day"; date: string } | { kind: "range" };
+
+function prefix(scope: Scope): string {
+  return scope.kind === "day" ? `/api/day/${scope.date}` : "/api/range";
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${API}${path}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`${path} -> ${res.status}`);
   return res.json() as Promise<T>;
 }
 
-export async function loadAll(): Promise<Payload> {
-  const [meta, hourly, narratives, claims, anomalies, feed] = await Promise.all([
-    get<Meta>("/api/meta"),
-    get<Hour[]>("/api/hourly"),
-    get<Narrative[]>("/api/narratives"),
-    get<Claim[]>("/api/claims"),
-    get<Anomaly[]>("/api/anomalies"),
-    // Every distinct claim, ~400 rows. Filtering happens client-side so the
-    // rail, the feed and the forensic cards always agree on one selection.
-    get<Tweet[]>("/api/feed?limit=1000"),
+export async function loadAll(scope: Scope): Promise<Payload> {
+  const base = prefix(scope);
+  const hourly =
+    scope.kind === "day" ? get<Hour[]>(`${base}/hourly`) : Promise.resolve([] as Hour[]);
+  const [meta, hours, narratives, claims, anomalies, feed] = await Promise.all([
+    get<Meta>(`${base}/meta`),
+    hourly,
+    get<Narrative[]>(`${base}/narratives`),
+    get<Claim[]>(`${base}/claims`),
+    get<Anomaly[]>(`${base}/anomalies`),
+    get<Tweet[]>(`${base}/feed?limit=20000`),
   ]);
-  return { meta, hourly, narratives, claims, anomalies, feed };
+  return { meta, hourly: hours, narratives, claims, anomalies, feed };
 }
 
 /** Colour + copy for each diffusion verdict. High volume is not guilt. */
@@ -191,4 +202,13 @@ export function plural(n: number, word: string) {
 
 export function hourLabel(iso: string) {
   return `${String(new Date(iso).getUTCHours()).padStart(2, "0")}:00 UTC`;
+}
+
+export function stamp(iso: string, withDate: boolean) {
+  const d = new Date(iso);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  if (!withDate) return `${hh}:${mm}`;
+  const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  return `${mon} ${d.getUTCDate()} · ${hh}:${mm}`;
 }

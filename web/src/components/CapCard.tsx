@@ -27,7 +27,15 @@ function Bar({ label, value, hint }: { label: string; value: number; hint: strin
   );
 }
 
-export default function CapCard({ tweet, claim }: { tweet: Tweet; claim?: Claim }) {
+export default function CapCard({
+  tweet,
+  claim,
+  showHourly = true,
+}: {
+  tweet: Tweet;
+  claim?: Claim;
+  showHourly?: boolean;
+}) {
   const s = tweet.scores;
   const band = capBand(s.cap_score);
   // Ring members rewrite the copy per vendor, so text clustering calls them
@@ -41,7 +49,8 @@ export default function CapCard({ tweet, claim }: { tweet: Tweet; claim?: Claim 
             "Text is unique, but the same code appears under other accounts and vendor names.",
         }
       : DIFFUSION_STYLE[tweet.diffusion];
-  const peakIdx = claim ? new Date(claim.peak_hour).getUTCHours() : undefined;
+  const peakIdx =
+    showHourly && claim?.peak_hour ? new Date(claim.peak_hour).getUTCHours() : undefined;
 
   return (
     <div className="w-[340px] rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/60">
@@ -68,22 +77,26 @@ export default function CapCard({ tweet, claim }: { tweet: Tweet; claim?: Claim 
               {fmt.format(claim.copies)} copies / {fmt.format(claim.unique_authors)} accounts
             </span>
           </div>
-          <Sparkline
-            values={claim.hourly}
-            width={300}
-            markIndex={peakIdx}
-            stroke={tweet.diffusion === "coordinated" ? "#fb7185" : "#34d399"}
-            fill={
-              tweet.diffusion === "coordinated"
-                ? "rgba(251,113,133,0.15)"
-                : "rgba(52,211,153,0.15)"
-            }
-          />
-          <div className="flex justify-between text-[10px] text-slate-500">
-            <span>00:00</span>
-            <span>peak {hourLabel(claim.peak_hour)}</span>
-            <span>23:00</span>
-          </div>
+          {showHourly && claim.hourly && claim.hourly.length > 0 && (
+            <>
+              <Sparkline
+                values={claim.hourly}
+                width={300}
+                markIndex={peakIdx}
+                stroke={tweet.diffusion === "coordinated" ? "#fb7185" : "#34d399"}
+                fill={
+                  tweet.diffusion === "coordinated"
+                    ? "rgba(251,113,133,0.15)"
+                    : "rgba(52,211,153,0.15)"
+                }
+              />
+              <div className="flex justify-between text-[10px] text-slate-500">
+                <span>00:00</span>
+                <span>peak {claim.peak_hour ? hourLabel(claim.peak_hour) : "—"}</span>
+                <span>23:00</span>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -136,7 +149,8 @@ export default function CapCard({ tweet, claim }: { tweet: Tweet; claim?: Claim 
       </dl>
 
       <p className="mt-3 border-t border-slate-800 pt-2 text-[10px] leading-relaxed text-slate-500">
-        Scores are lexicon and pattern heuristics over one UTC day, not a medical or
+        Scores are lexicon and pattern heuristics
+        {showHourly ? " over one UTC day" : " over the labeled window"}, not a medical or
         legal judgement.
       </p>
     </div>

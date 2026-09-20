@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import CapCard from "./CapCard";
-import { Claim, Tweet, capBand, fmt } from "@/lib/api";
+import { Claim, Tweet, capBand, fmt, stamp } from "@/lib/api";
 
 /** Must match the CapCard width and its rough max height, so the card can be
  *  positioned before it has rendered and been measured. */
@@ -23,11 +23,6 @@ function handleOf(t: Tweet) {
   return `@user_${t.author_id.slice(-6)}`;
 }
 
-function timeOf(iso: string) {
-  const d = new Date(iso);
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
-}
-
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <span className="tabular-nums">
@@ -40,10 +35,14 @@ export default function Feed({
   tweets,
   claims,
   limit,
+  showDate = false,
+  showHourly = true,
 }: {
   tweets: Tweet[];
   claims: Claim[];
   limit: number;
+  showDate?: boolean;
+  showHourly?: boolean;
 }) {
   const [hovered, setHovered] = useState<Tweet | null>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -86,7 +85,7 @@ export default function Feed({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-sm">
                 <span className="font-semibold text-slate-100">{handleOf(t)}</span>
-                <span className="text-slate-500">· {timeOf(t.created_at)} UTC</span>
+                <span className="text-slate-500">· {stamp(t.created_at, showDate)} UTC</span>
                 {t.is_retweet && (
                   <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
                     RT
@@ -123,7 +122,11 @@ export default function Feed({
           className="pointer-events-none fixed z-50"
           style={{ top: pos.top, left: pos.left }}
         >
-          <CapCard tweet={hovered} claim={claimById.get(hovered.claim_id)} />
+          <CapCard
+            tweet={hovered}
+            claim={claimById.get(hovered.claim_id)}
+            showHourly={showHourly}
+          />
         </div>
       )}
     </div>

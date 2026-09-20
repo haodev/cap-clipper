@@ -23,7 +23,8 @@ function render(v: unknown) {
   if (v === null) return "—";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
     const d = new Date(v);
-    return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
+    const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+    return `${mon} ${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
   }
   return String(v);
 }

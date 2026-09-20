@@ -8,12 +8,14 @@ export default function NarrativeRail({
   filter,
   onSelect,
   counts,
+  showHourly = true,
 }: {
   narratives: Narrative[];
   filter: Filter;
   onSelect: (key: string | null) => void;
   /** Feed rows per narrative, so the rail never promises more than it shows. */
   counts: Record<string, number>;
+  showHourly?: boolean;
 }) {
   const active = filter.kind === "narrative" ? filter.key : null;
 
@@ -31,13 +33,15 @@ export default function NarrativeRail({
         )}
       </div>
       <p className="px-1 pb-1 text-[11px] leading-relaxed text-slate-500">
-        Found bottom-up from the day&apos;s text, not from a preset topic list.
-        Counts are distinct claims / total posts.
+        {showHourly
+          ? "Found bottom-up from the day's text, not from a preset topic list. Counts are distinct claims / total posts."
+          : "Same narrative lexicon as the day demo, scored across the labeled window. Counts are distinct claims / total posts."}
       </p>
 
       {narratives.map((n) => {
         const on = active === n.key;
-        const peakIdx = new Date(n.peak_hour).getUTCHours();
+        const peakIdx =
+          showHourly && n.peak_hour ? new Date(n.peak_hour).getUTCHours() : undefined;
         return (
           <button
             key={n.key}
@@ -58,18 +62,27 @@ export default function NarrativeRail({
                 <span className="text-slate-600"> / {fmt.format(n.total)}</span>
               </span>
             </div>
-            <Sparkline
-              values={n.hourly}
-              width={230}
-              height={32}
-              markIndex={peakIdx}
-              stroke={on ? "#38bdf8" : "#64748b"}
-              fill={on ? "rgba(56,189,248,0.16)" : "rgba(100,116,139,0.12)"}
-            />
-            <div className="flex justify-between text-[10px] text-slate-500">
-              <span>peak {hourLabel(n.peak_hour)}</span>
-              <span>{n.amplification_ratio.toFixed(1)}x amplified</span>
-            </div>
+            {showHourly && n.hourly && n.hourly.length > 0 && (
+              <>
+                <Sparkline
+                  values={n.hourly}
+                  width={230}
+                  height={32}
+                  markIndex={peakIdx}
+                  stroke={on ? "#38bdf8" : "#64748b"}
+                  fill={on ? "rgba(56,189,248,0.16)" : "rgba(100,116,139,0.12)"}
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>peak {n.peak_hour ? hourLabel(n.peak_hour) : "—"}</span>
+                  <span>{n.amplification_ratio.toFixed(1)}x amplified</span>
+                </div>
+              </>
+            )}
+            {!showHourly && (
+              <div className="mt-1 text-[10px] text-slate-500">
+                {n.amplification_ratio.toFixed(1)}x amplified
+              </div>
+            )}
           </button>
         );
       })}

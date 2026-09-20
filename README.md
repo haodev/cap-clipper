@@ -2,8 +2,14 @@
 
 CamelCamelCamel for internet culture. Real-time truthfulness, astroturf detection, and narrative velocity tracking for social feeds.
 
-The demo slice is one UTC day (2026-08-17) of GLP-1 discourse — Ozempic, Wegovy,
-Mounjaro, semaglutide — pulled from the Calcifer X firehose.
+The demo has two frozen views:
+
+- **Day demo** (`/day/2026-08-17`) — one UTC day of GLP-1 discourse with hour-by-hour
+  topic share, sparklines, and hour-focus forensic cards.
+- **Multi-day** (`/`) — the labeled 17 Aug–17 Sep 2026 slice in `data/ozempic_labeled.csv`,
+  same Cap scores / claims / narratives / cards, without hour-by-hour charts.
+
+Both are served from precomputed JSON. Nothing is analysed at request time.
 
 ## Running the demo
 
@@ -31,6 +37,7 @@ python scripts/download_file.py --all      # ~23 shards, ~140 MB each
 python scripts/extract_glp1.py             # firehose -> curated_glp1.parquet
 python scripts/enrich_glp1.py              # scores    -> enriched_glp1.parquet
 python scripts/build_payload.py            # freeze    -> demo_payload.json
+python scripts/build_range_payload.py      # labeled CSV -> range_payload.json
 ```
 
 ## Where Gemini is used

@@ -96,6 +96,14 @@ def engagement_oddity(row: pd.Series) -> float:
     return min(1.0, rts / (likes + replies + 1.0) / 50.0)
 
 
+def _as_bool(v) -> bool:
+    if isinstance(v, bool):
+        return v
+    if pd.isna(v):
+        return False
+    return str(v).strip().lower() in {"true", "1", "yes"}
+
+
 def vader_scores(texts: list[str]) -> list[float]:
     try:
         from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -111,14 +119,21 @@ def vader_scores(texts: list[str]) -> list[float]:
     return [float(sia.polarity_scores(t or "")["compound"]) for t in texts]
 
 
-def enrich() -> pd.DataFrame:
-    if not CURATED_PATH.exists():
-        raise SystemExit(f"missing {CURATED_PATH}; run python scripts/extract_glp1.py first")
-
-    df = pq.read_table(CURATED_PATH).to_pandas()
+def enrich_frame(
+    df: pd.DataFrame, *, attach_hourly: bool = True, join_llm: bool = True
+) -> pd.DataFrame:
+    """Score a tweet table. Shared by the one-day parquet slice and the labeled CSV."""
+    df = df.copy()
     df["created_at"] = pd.to_datetime(df["created_at"], utc=True)
     df["hour"] = df["created_at"].dt.floor("h")
-    df["is_retweet"] = df["is_retweet"].astype(bool)
+    if "is_retweet" not in df.columns and "is_rt" in df.columns:
+        df["is_retweet"] = df["is_rt"].map(_as_bool)
+    df["is_retweet"] = df["is_retweet"].map(_as_bool)
+    df["author_id"] = df["author_id"].astype(str)
+    df["id"] = df["id"].astype(str)
+    df["body"] = df["body"].fillna("").astype(str)
+    for col in ("like_count", "reply_count", "retweet_count"):
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
     df["text_norm"] = df["body"].map(normalize)
     df["text_hash"] = df["body"].map(text_hash)
 
@@ -228,7 +243,7 @@ def enrich() -> pd.DataFrame:
         0.5 * df["astroturf_score"] + 0.3 * df["promo_score"] + 0.2 * df["engagement_oddity"]
     ).clip(0, 1)
 
-    if HOURLY_PATH.exists():
+    if attach_hourly and HOURLY_PATH.exists():
         hourly = pq.read_table(HOURLY_PATH).to_pandas()
         hourly["hour"] = pd.to_datetime(hourly["hour"], utc=True)
         topic_n = df.groupby("hour").size().rename("topic_n")
@@ -237,8 +252,16 @@ def enrich() -> pd.DataFrame:
         share["topic_share"] = share["topic_n"] / share["en_count"].clip(lower=1)
         df = df.merge(share[["hour", "en_count", "topic_share"]], on="hour", how="left")
 
-    df = _join_llm_labels(df)
+    if join_llm:
+        df = _join_llm_labels(df)
+    return df
 
+
+def enrich() -> pd.DataFrame:
+    if not CURATED_PATH.exists():
+        raise SystemExit(f"missing {CURATED_PATH}; run python scripts/extract_glp1.py first")
+
+    df = enrich_frame(pq.read_table(CURATED_PATH).to_pandas(), attach_hourly=True)
     ENRICHED_PATH.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(pa_from_df(df), ENRICHED_PATH)
     _print_report(df)
@@ -355,7 +378,8 @@ def _print_report(df: pd.DataFrame) -> None:
     orig = df.loc[~df["is_retweet"]]
     print("\n=== slice ===")
     print(f"rows={len(df):,} originals={len(orig):,} retweets={int(df['is_retweet'].sum()):,}")
-    print(f"match_source:\n{df['match_source'].value_counts().to_string()}")
+    if "match_source" in df.columns:
+        print(f"match_source:\n{df['match_source'].value_counts().to_string()}")
     print(
         "tags originals: "
         f"side_effect={int(orig['tag_side_effect'].sum())} "

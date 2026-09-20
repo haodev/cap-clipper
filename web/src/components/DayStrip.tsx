@@ -21,8 +21,12 @@ export default function DayStrip({ hourly, meta }: { hourly: Hour[]; meta: Meta 
     <div className="flex flex-wrap items-end gap-x-10 gap-y-4 border-b border-slate-800 px-5 py-4">
       <Metric
         label="Firehose scanned"
-        value={`${(meta.firehose_rows_scanned / 1e6).toFixed(0)}M`}
-        sub={`${fmt.format(meta.english_rows)} English`}
+        value={
+          meta.firehose_rows_scanned != null
+            ? `${(meta.firehose_rows_scanned / 1e6).toFixed(0)}M`
+            : "—"
+        }
+        sub={meta.english_rows != null ? `${fmt.format(meta.english_rows)} English` : undefined}
       />
       <Metric
         label="GLP-1 slice"

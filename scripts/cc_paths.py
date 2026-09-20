@@ -17,6 +17,9 @@ DAY_END = "2026-08-18T00:00:00Z"
 CURATED_PATH = DATA_DIR / "curated_glp1.parquet"
 HOURLY_PATH = DATA_DIR / "hourly_en_firehose.parquet"
 ENRICHED_PATH = DATA_DIR / "enriched_glp1.parquet"
+ENRICHED_RANGE_PATH = DATA_DIR / "enriched_range.parquet"
+RANGE_PAYLOAD_PATH = DATA_DIR / "range_payload.json"
+LABELED_CSV_PATH = ROOT / "data" / "ozempic_labeled.csv"
 LABEL_CACHE_PATH = DATA_DIR / "gemini_labels.json"
 
 

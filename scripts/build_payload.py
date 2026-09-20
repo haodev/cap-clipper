@@ -136,7 +136,7 @@ def _sarcasm_gap(sub: pd.DataFrame) -> float | None:
     return round(float(sub["sentiment_vader"].mean() - sub["sentiment_stance"].mean()), 3)
 
 
-def build_narratives(df: pd.DataFrame) -> list[dict]:
+def build_narratives(df: pd.DataFrame, *, include_hourly: bool = True) -> list[dict]:
     """Volume and shape of every discovered narrative thread, ranked."""
     out = []
     for key, label in NARRATIVE_LABELS.items():
@@ -147,81 +147,85 @@ def build_narratives(df: pd.DataFrame) -> list[dict]:
         if sub.empty:
             continue
         orig = sub[~sub["is_retweet"]]
-        by_hour = sub.groupby(sub["hour"]).size()
-        out.append(
-            {
-                "key": key,
-                "label": label,
-                "total": int(len(sub)),
-                "originals": int(len(orig)),
-                "retweets": int(len(sub) - len(orig)),
-                "unique_authors": int(sub["author_id"].nunique()),
-                "amplification_ratio": round(float(len(sub) - len(orig)) / max(len(orig), 1), 2),
-                "mean_sentiment": round(float(sub["sentiment_vader"].mean()), 3),
-                "mean_stance": None
-                if "sentiment_stance" not in sub.columns or sub["sentiment_stance"].isna().all()
-                else round(float(sub["sentiment_stance"].mean()), 3),
-                "sarcasm_rate": None
-                if "llm_sarcastic" not in sub.columns
-                else round(float(sub["llm_sarcastic"].mean()), 3),
-                "sarcasm_gap": _sarcasm_gap(sub),
-                "peak_hour": by_hour.idxmax().isoformat() if len(by_hour) else None,
-                "hourly": [int(by_hour.get(h, 0)) for h in sorted(df["hour"].unique())],
-                "top_example": clean(
-                    sub.sort_values("retweet_count", ascending=False).iloc[0]["body"], 220
-                ),
-            }
-        )
+        row = {
+            "key": key,
+            "label": label,
+            "total": int(len(sub)),
+            "originals": int(len(orig)),
+            "retweets": int(len(sub) - len(orig)),
+            "unique_authors": int(sub["author_id"].nunique()),
+            "amplification_ratio": round(float(len(sub) - len(orig)) / max(len(orig), 1), 2),
+            "mean_sentiment": round(float(sub["sentiment_vader"].mean()), 3),
+            "mean_stance": None
+            if "sentiment_stance" not in sub.columns or sub["sentiment_stance"].isna().all()
+            else round(float(sub["sentiment_stance"].mean()), 3),
+            "sarcasm_rate": None
+            if "llm_sarcastic" not in sub.columns
+            else round(float(sub["llm_sarcastic"].mean()), 3),
+            "sarcasm_gap": _sarcasm_gap(sub),
+            "top_example": clean(
+                sub.sort_values("retweet_count", ascending=False).iloc[0]["body"], 220
+            ),
+        }
+        if include_hourly:
+            by_hour = sub.groupby(sub["hour"]).size()
+            row["peak_hour"] = by_hour.idxmax().isoformat() if len(by_hour) else None
+            row["hourly"] = [int(by_hour.get(h, 0)) for h in sorted(df["hour"].unique())]
+        out.append(row)
     return sorted(out, key=lambda n: -n["total"])
 
 
-def build_claims(df: pd.DataFrame) -> list[dict]:
+def build_claims(df: pd.DataFrame, *, include_hourly: bool = True) -> list[dict]:
     """Every claim that actually spread, with its diffusion verdict."""
     spreading = df[df["claim_copies"] >= 5]
     out = []
     for text_hash, grp in spreading.groupby("text_hash"):
         grp = grp.sort_values("created_at")
-        by_hour = grp.groupby("hour").size()
-        out.append(
-            {
-                "claim_id": str(text_hash),
-                "text": clean(grp.iloc[0]["body"], 240),
-                "diffusion": str(grp.iloc[0]["diffusion"]),
-                "copies": int(len(grp)),
-                "unique_authors": int(grp["author_id"].nunique()),
-                "author_ratio": round(float(grp.iloc[0]["claim_author_ratio"]), 3),
-                "burstiness": round(float(grp.iloc[0]["claim_burstiness"]), 3),
-                "span_minutes": int(grp.iloc[0]["claim_span_min"]),
-                "first_seen": grp["created_at"].min().isoformat(),
-                "peak_hour": by_hour.idxmax().isoformat(),
-                "hourly": [int(by_hour.get(h, 0)) for h in sorted(df["hour"].unique())],
-                "narratives": [
-                    k for k in NARRATIVE_LABELS if grp.iloc[0].get(f"narr_{k}", False)
-                ],
-                "mean_sentiment": round(float(grp["sentiment_vader"].mean()), 3),
-                "stance": None if pd.isna(grp.iloc[0].get("llm_stance")) else str(grp.iloc[0]["llm_stance"]),
-                "intent": None if pd.isna(grp.iloc[0].get("llm_intent")) else str(grp.iloc[0]["llm_intent"]),
-                "sarcastic": bool(grp.iloc[0].get("llm_sarcastic")),
-            }
-        )
+        row = {
+            "claim_id": str(text_hash),
+            "text": clean(grp.iloc[0]["body"], 240),
+            "diffusion": str(grp.iloc[0]["diffusion"]),
+            "copies": int(len(grp)),
+            "unique_authors": int(grp["author_id"].nunique()),
+            "author_ratio": round(float(grp.iloc[0]["claim_author_ratio"]), 3),
+            "burstiness": round(float(grp.iloc[0]["claim_burstiness"]), 3),
+            "span_minutes": int(grp.iloc[0]["claim_span_min"]),
+            "first_seen": grp["created_at"].min().isoformat(),
+            "narratives": [
+                k for k in NARRATIVE_LABELS if grp.iloc[0].get(f"narr_{k}", False)
+            ],
+            "mean_sentiment": round(float(grp["sentiment_vader"].mean()), 3),
+            "stance": None if pd.isna(grp.iloc[0].get("llm_stance")) else str(grp.iloc[0]["llm_stance"]),
+            "intent": None if pd.isna(grp.iloc[0].get("llm_intent")) else str(grp.iloc[0]["llm_intent"]),
+            "sarcastic": bool(grp.iloc[0].get("llm_sarcastic")),
+        }
+        if include_hourly:
+            by_hour = grp.groupby("hour").size()
+            row["peak_hour"] = by_hour.idxmax().isoformat()
+            row["hourly"] = [int(by_hour.get(h, 0)) for h in sorted(df["hour"].unique())]
+        out.append(row)
     return sorted(out, key=lambda c: -c["copies"])
 
 
-def build_anomalies(df: pd.DataFrame, orig: pd.DataFrame) -> list[dict]:
-    """Three frozen forensic cards. Evidence only; Gemini prose is added later."""
+def build_anomalies(
+    df: pd.DataFrame, orig: pd.DataFrame, *, include_hour_cards: bool = True, window_label: str = "day"
+) -> list[dict]:
+    """Frozen forensic cards. Evidence only; Gemini prose is added later."""
     cards: list[dict] = []
 
-    # 0. The claim that dominated the day, with its organic/coordinated verdict.
+    # 0. The claim that dominated the window, with its organic/coordinated verdict.
     spread = df[df["claim_copies"] >= 5]
     if len(spread):
         top_hash = spread.groupby("text_hash").size().idxmax()
         grp = spread[spread["text_hash"] == top_hash].sort_values("created_at")
+        share = len(grp) / max(len(df), 1)
         cards.append(
             {
                 "id": "dominant_claim",
                 "narrative_type": "organic_virality",
-                "headline": "One claim drove a quarter of the day's GLP-1 volume",
-                # Lets the UI point the feed at the rows behind this card.
+                "headline": f"One claim drove {share:.0%} of {window} GLP-1 volume"
+                if window_label == "range"
+                else "One claim drove a quarter of the day's GLP-1 volume",
                 "focus": {"type": "claim", "value": str(top_hash)},
                 "evidence": {
                     "text": clean(grp.iloc[0]["body"], 220),
@@ -233,7 +237,7 @@ def build_anomalies(df: pd.DataFrame, orig: pd.DataFrame) -> list[dict]:
                     "span_minutes": int(grp.iloc[0]["claim_span_min"]),
                     "why_it_matters": (
                         "Every copy came from a different account and spread across the whole "
-                        "day, so the coordination score is zero. High volume is not evidence "
+                        f"{window_label}, so the coordination score is zero. High volume is not evidence "
                         "of a campaign."
                     ),
                 },
@@ -305,36 +309,37 @@ def build_anomalies(df: pd.DataFrame, orig: pd.DataFrame) -> list[dict]:
         )
 
     # 3. Side-effect concentration: hour with the highest tagged rate.
-    se_hours = (
-        orig.groupby("hour")
-        .agg(n=("id", "size"), rate=("tag_side_effect", "mean"))
-        .query(f"n >= {LOW_N}")
-        .sort_values("rate", ascending=False)
-    )
-    if len(se_hours):
-        peak_hour = se_hours.index[0]
-        baseline = orig[orig["hour"] < peak_hour]["tag_side_effect"].mean()
-        members = orig[(orig["hour"] == peak_hour) & orig["tag_side_effect"]].nsmallest(
-            3, "sentiment_vader"
+    if include_hour_cards:
+        se_hours = (
+            orig.groupby("hour")
+            .agg(n=("id", "size"), rate=("tag_side_effect", "mean"))
+            .query(f"n >= {LOW_N}")
+            .sort_values("rate", ascending=False)
         )
-        worst = orig[orig["tag_side_effect"]].nsmallest(3, "sentiment_vader")
-        cards.append(
-            {
-                "id": "side_effect_concentration",
-                "narrative_type": "side_effect_panic",
-                "headline": "Side-effect mentions concentrate in one hour",
-                "focus": {"type": "hour", "value": peak_hour.isoformat()},
-                "evidence": {
-                    "hour": peak_hour.isoformat(),
-                    "originals_in_hour": int(se_hours.iloc[0]["n"]),
-                    "side_effect_rate": round(float(se_hours.iloc[0]["rate"]), 3),
-                    "baseline_rate_before": round(float(baseline), 3),
-                    "lift": round(float(se_hours.iloc[0]["rate"] / max(baseline, 1e-6)), 2),
-                },
-                "tweets": [tweet_json(r) for _, r in members.head(3).iterrows()]
-                + [tweet_json(r) for _, r in worst.iterrows()],
-            }
-        )
+        if len(se_hours):
+            peak_hour = se_hours.index[0]
+            baseline = orig[orig["hour"] < peak_hour]["tag_side_effect"].mean()
+            members = orig[(orig["hour"] == peak_hour) & orig["tag_side_effect"]].nsmallest(
+                3, "sentiment_vader"
+            )
+            worst = orig[orig["tag_side_effect"]].nsmallest(3, "sentiment_vader")
+            cards.append(
+                {
+                    "id": "side_effect_concentration",
+                    "narrative_type": "side_effect_panic",
+                    "headline": "Side-effect mentions concentrate in one hour",
+                    "focus": {"type": "hour", "value": peak_hour.isoformat()},
+                    "evidence": {
+                        "hour": peak_hour.isoformat(),
+                        "originals_in_hour": int(se_hours.iloc[0]["n"]),
+                        "side_effect_rate": round(float(se_hours.iloc[0]["rate"]), 3),
+                        "baseline_rate_before": round(float(baseline), 3),
+                        "lift": round(float(se_hours.iloc[0]["rate"] / max(baseline, 1e-6)), 2),
+                    },
+                    "tweets": [tweet_json(r) for _, r in members.head(3).iterrows()]
+                    + [tweet_json(r) for _, r in worst.iterrows()],
+                }
+            )
 
     # 4. VADER reads hostile sarcasm as positive. Only if stance labels exist.
     if "sentiment_stance" in df.columns and not df["sentiment_stance"].isna().all():
@@ -347,7 +352,7 @@ def build_anomalies(df: pd.DataFrame, orig: pd.DataFrame) -> list[dict]:
                 {
                     "id": "sentiment_blindspot",
                     "narrative_type": "sentiment_blindspot",
-                    "headline": "The day's most hostile jokes read as positive to the lexicon",
+                    "headline": "Hostile jokes read as positive to the lexicon",
                     "focus": {"type": "claim", "value": str(top["text_hash"])},
                     "evidence": {
                         "text": clean(top["body"], 220),
@@ -368,6 +373,23 @@ def build_anomalies(df: pd.DataFrame, orig: pd.DataFrame) -> list[dict]:
     return cards
 
 
+def select_feed(df: pd.DataFrame) -> pd.DataFrame:
+    """One row per distinct claim; drop internally flagged minor_involved rows."""
+    feed = (
+        df.sort_values(["retweet_count", "like_count"], ascending=False)
+        .drop_duplicates(subset="text_hash")
+        .sort_values(["cluster_size", "retweet_count"], ascending=False)
+    )
+    if "llm_risks" in feed.columns:
+        feed = feed[~feed["llm_risks"].fillna("").astype(str).str.contains("minor_involved")]
+    if "risk_minor_involved" in feed.columns:
+        flagged = feed["risk_minor_involved"].map(
+            lambda v: str(v).strip().lower() in {"true", "1", "yes"}
+        )
+        feed = feed[~flagged]
+    return feed
+
+
 def main() -> None:
     if not ENRICHED_PATH.exists():
         raise SystemExit(f"missing {ENRICHED_PATH}; run scripts/enrich_glp1.py first")
@@ -376,20 +398,7 @@ def main() -> None:
     df["created_at"] = pd.to_datetime(df["created_at"], utc=True)
     df["hour"] = pd.to_datetime(df["hour"], utc=True)
     orig = df[~df["is_retweet"]].copy()
-
-    # One row per distinct claim, not per tweet. The whole slice is small enough
-    # to ship, but 193 of its rows are the same retweet, and a narrative filter
-    # over raw rows either returns a wall of duplicates or, for the small
-    # narratives, nothing at all. The representative is the copy with the most
-    # engagement; `cluster.size` carries how many copies it stands for.
-    feed = (
-        df.sort_values(["retweet_count", "like_count"], ascending=False)
-        .drop_duplicates(subset="text_hash")
-        .sort_values(["cluster_size", "retweet_count"], ascending=False)
-    )
-    # minor_involved is an internal suppression flag, never a displayed badge.
-    if "llm_risks" in feed.columns:
-        feed = feed[~feed["llm_risks"].fillna("").str.contains("minor_involved")]
+    feed = select_feed(df)
 
     payload = {
         "meta": {
