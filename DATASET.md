@@ -71,7 +71,7 @@ they are large, intermediate, or rebuildable in seconds:
 | Column | Meaning |
 | --- | --- |
 | `id` | Tweet id |
-| `author_id` | Account id (numeric; no usernames in this dataset) |
+| `author_id` | Account id (numeric). There is no dedicated author-username field; @mentions remain in the tweet text |
 | `created_at` | Posting time as supplied (UTC). We did not verify it against X |
 | `date`, `hour` | Date and hour of `created_at`, added by us for grouping |
 | `lang` | Language code as supplied. How it was determined is not documented, and we did not check its accuracy |
@@ -155,7 +155,8 @@ wrapped here only so it fits the page.
 ## Loading the CSV: keep the ids as text
 
 `id`, `author_id`, `conversation_id`, `reply_to_status_id`, `reply_to_user_id` and
-`quoting_id` are 19-digit numbers. If a tool reads them as numbers it will round them, and
+`quoting_id` are numeric identifiers that can be up to 19 digits long. If a tool reads them
+as numbers it will round them, and
 ids like `2089140150454645144` become `2089140150454645000` or `2.08914E+18`. That damage
 cannot be undone, so always load these six columns as text.
 
@@ -168,7 +169,8 @@ ID_COLUMNS = ["id", "author_id", "conversation_id",
               "reply_to_status_id", "reply_to_user_id", "quoting_id"]
 
 df = pd.read_csv("data/ozempic_dataset.csv", dtype={c: "string" for c in ID_COLUMNS},
-                 parse_dates=["created_at", "version", "first_seen", "added_at"])
+                 parse_dates=["created_at", "version", "first_seen", "added_at"],
+                 date_format="mixed")
 ```
 
 **Excel.** Do not double-click the file: Excel will convert the ids to scientific notation.
