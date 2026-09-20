@@ -199,8 +199,11 @@ dataset are.
   "she's on something") are not included. How many that is has not been measured.
 - **Relevance not hand-checked.** A tweet naming a drug may still be a joke, an insult or an
   aside. No sample has been read and marked yet.
-- **No location.** The source data has no country, city, coordinates or time zone, in any
-  column. Posting hours are the only rough clue.
+- **No structured geographic metadata is available.** The source data has no country, city,
+  coordinates, profile location or user time zone in any column. Tweet text may mention
+  places, but those mentions have not been extracted, and a place named in a tweet does not
+  establish where its author lives or posted from. Language and posting time do not
+  establish location either.
 - **The posting app is unknown**: the `source` column is empty in every row, as are `poll`
   and `embed`.
 - **Engagement is late and nearly static.** A tweet is usually first observed about a day
