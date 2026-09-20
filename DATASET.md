@@ -1,15 +1,17 @@
 # Ozempic and weight-loss drugs: dataset
 
-Every tweet **in the 396 files supplied for HopHacks** whose text names a weight-loss drug.
-The supplied files cover 17 Aug to 17 Sep 2026. How they were collected, and what share of
-all posts about these drugs they contain, is not known to us, so nothing here should be read
-as describing X as a whole.
+Every tweet **in the 396 files supplied for HopHacks** whose text matches our search terms.
+The `created_at` values in those files run from 17 Aug to 17 Sep 2026.
+
+We did not examine how the supplied files were produced, and we did not assess how much of
+any wider conversation they cover. Every figure below therefore describes the supplied files
+or our extract from them, and nothing else.
 
 **How to read this file.** Three kinds of statement are kept apart:
 *measured* (counted in a stated population, either the 396 supplied files, the 24,894-row raw
 extract or the 23,058-tweet dataset, and repeatable),
 *our choice* (a decision we made while building the dataset), and
-*not verified* (something we have not checked, or cannot check with these fields).
+*not checked* (something we did not verify, or could not verify from the fields present).
 
 Measured across the dataset itself, meaning all 23,058 tweets:
 
@@ -211,8 +213,8 @@ dataset are.
 
 - **Counted independently:** in 9 randomly chosen supplied files, matching tweets were
   counted directly with a plain text search and compared with our extract. All 9 matched
-  exactly. This checks that the extraction loses nothing; it says nothing about whether the
-  search terms are the right ones.
+  exactly. No discrepancies were found in the nine sampled files; this says nothing about
+  whether the search terms are the right ones.
 - **Repeatable:** rerunning the whole pipeline produces an identical dataset and a 32-row
   daily table.
 - **All 396 supplied files processed:** recorded in `progress.csv`, none missing.
@@ -222,50 +224,53 @@ dataset are.
 
 ## Known limitations
 
-- **Names only.** Tweets that discuss these drugs without naming them ("the skinny jab",
-  "she's on something") are not included. How many that is has not been measured.
+- **Keyword-based inclusion.** A tweet is included only when its text matches one of the
+  frozen search terms. Tweets discussing these drugs in other words ("the skinny jab",
+  "she's on something") are outside the definition. We did not measure how many such tweets
+  the supplied files contain.
 - **Relevance not hand-checked.** A tweet naming a drug may still be a joke, an insult or an
   aside. No sample has been read and marked yet.
-- **No structured geographic metadata is available.** The source data has no country, city,
-  coordinates, profile location or user time zone in any column. Tweet text may mention
-  places, but those mentions have not been extracted, and a place named in a tweet does not
-  establish where its author lives or posted from. Language and posting time do not
-  establish location either.
-- **The `source`, `poll` and `embed` columns are empty** in every row of this dataset. All
-  396 supplied files share one identical column set, so no posting-app information is
-  available to us. Why those fields are empty is not known.
-- **Engagement counts cannot show growth.** Measured across all 23,058 dataset tweets, every
-  one of which has both timestamps: the gap between `created_at` and the first observation
-  has a median of 23.8 hours (25th percentile 9.1, 75th 45.8), and 17.9% are first observed
-  within 6 hours. 21,848 of the 23,058 (94.8%) appear only once in our extract. Among the
-  1,210 that appear two or more times, the view count is unchanged for 42.4%, and the median
-  gain is 2 views (90th percentile 1,696). So these counts can be compared between tweets,
-  but they do not describe how fast a tweet grew. We do not know why observations are spaced
-  this way.
-- **The supplied files are not evenly spread over the month.** Measured across the 23,058
-  dataset tweets: 21,254 are dated in August and 1,804 in September, and the daily
-  totals fall sharply after 31 August. Raw daily counts are therefore not comparable across
-  the month; compare rates instead (`build_topic_dataset.py` writes `ozempic_by_day.csv`
-  locally with a `per_million` column). **Not verified:** whether this reflects collection,
-  storage or anything about real posting activity. It should not be read as interest
-  declining.
-- **Retweets are included**: 56.5% of the 23,058 dataset tweets, by the `RT @` rule above.
+- **No dedicated geographic fields.** The supplied columns include no country, city,
+  coordinates, profile location or user time zone field. Tweet text may mention places, but
+  we did not extract those mentions, and a place named in a tweet does not establish where
+  its author lives or posted from. We did not test language or posting time as location
+  indicators.
+- **We did not extract posting-app information.** The `source`, `poll` and `embed` columns
+  are empty in our final dataset. We did not investigate why.
+- **We did not validate these observations for estimating growth rates.** Measured across all
+  23,058 dataset tweets, every one of which has both timestamps: the gap between `created_at`
+  and the first observation has a median of 23.8 hours (25th percentile 9.1, 75th 45.8), and
+  17.9% are first observed within 6 hours. 21,848 of the 23,058 (94.8%) appear only once in
+  our extract. Among the 1,210 that appear two or more times, the view count is unchanged for
+  42.4%, and the median gain is 2 views (90th percentile 1,696). We did not examine why the
+  observations are spaced this way, and we did not test whether the spacing supports
+  estimating how fast a tweet gained engagement.
+- **Daily counts describe our data only.** Measured across the 23,058 dataset tweets: 21,254
+  are dated in August and 1,804 in September, and the daily totals fall sharply after
+  31 August. Because the supplied daily volumes differ so much, raw daily counts are not
+  comparable across the month within this data; `build_topic_dataset.py` writes
+  `ozempic_by_day.csv` locally with a `per_million` column normalised against the supplied
+  daily totals. Neither the raw counts nor the normalised rates were validated as a measure
+  of trends in any wider conversation, and we did not check what produced the imbalance.
+- **Retweets are included**: 56.5% of the 23,058 dataset tweets match the `RT @` rule above.
   Measured within the dataset: 11,675 of those 23,058 rows (50.6%) have lowercased text that
-  also appears under another tweet id, and 99.0% of those 11,675 are retweets. So repeated
-  wording in this dataset mostly reflects re-sharing, not separate accounts independently
-  writing the same thing. Exclude retweets with `is_rt = false` when studying what people
-  wrote themselves.
-- **Not a representative sample.** We cannot say what fraction of all posts about these
-  drugs the supplied files contain, and the accounts here are not a sample of any
-  population. Counts describe this dataset only.
-- **No usernames**, only numeric account ids, and no follower counts or profile information.
-- **1,309 source rows have no timestamp.** They are counted in the 395,352,258 total but
-  cannot appear in any per-day figure, so daily totals sum to 395,350,949.
-- **An interrupted extraction can need a clean restart.** `extract_topic_all_days.py` saves
-  its progress after every 20 files it finishes. Stopping it normally is safe: it resumes
-  from the last checkpoint and simply redoes up to 19 files. But the checkpoint writes three
-  files one after another (the extract, the daily totals, the progress list), so a crash or
-  a power cut *during* a checkpoint can leave them disagreeing with each other, and a resume
-  would then miss or double-count those files. This is known and not guarded against. If the
-  run dies unexpectedly, delete the topic output folder and start again; with the archive
-  already downloaded, a full rerun takes about 3 minutes.
+  also appears under another tweet id, and 99.0% of those 11,675 match the `RT @` rule. That
+  is consistent with repeated wording arising from re-sharing; we did not verify the rule
+  against X, and it does not rule out separate accounts posting the same text independently.
+  Set `is_rt = false` to exclude these rows.
+- **Coverage not assessed.** We did not test what share of any wider conversation the
+  supplied files hold, nor how the 19,768 accounts here relate to any larger group. Every
+  count describes this dataset.
+- **No account fields beyond the id.** The supplied columns carry `author_id` only: no
+  username, follower count, bio, profile or account-creation field.
+- **1,309 rows across the supplied files have a missing `created_at` value.** They are
+  counted in the 395,352,258 row total but cannot appear in any per-day figure, so the daily
+  totals sum to 395,350,949.
+- **Resume is supported from a fully written checkpoint.** `extract_topic_all_days.py` saves
+  its progress after every 20 files it finishes, and a run restarted after a completed
+  checkpoint resumes from it, redoing at most 19 files. A checkpoint writes three files one
+  after another (the extract, the daily totals, the progress list), and an interruption
+  partway through that write leaves a checkpoint that is not fully written; resuming from one
+  of those is not supported, because the three files can disagree. The script does not detect
+  this case. If a run stops unexpectedly, delete the topic output folder and start again;
+  with the supplied files already on disk, a full rerun takes about 3 minutes.
