@@ -1,0 +1,60 @@
+# Drug entities named in the slice. Same {group: [terms]} schema as the other
+# lexicons, so cc_paths.load_groups("drugs.yml") reads it unmodified.
+#
+# A brand and its molecule are separate groups: "semaglutide (Ozempic)" is two
+# entities. Grey-market posts talk in molecules; the culture war talks in brands.
+#
+# Matching in enrich_glp1.py is a word-start match on normalized text, not a
+# bare substring, so "glp1" does not fire on catalogue numbers like "wiglp136".
+#
+# Counts in comments are distinct-claims / independent-sources on 2026-08-17.
+# Terms that could not be verified were dropped — see the notes at the bottom.
+
+ozempic:
+  - ozempic
+wegovy:
+  - wegovy
+mounjaro:
+  - mounjaro
+  - monjaro
+zepbound:
+  - zepbound
+semaglutide:
+  - semaglutide
+tirzepatide:
+  - tirzepatide
+  - tirz
+retatrutide:
+  - retatrutide
+  - glp-3r
+liraglutide:
+  - liraglutide
+dulaglutide:
+  - dulaglutide
+orforglipron:
+  - orforglipron
+saxenda:
+  - saxenda
+victoza:
+  - victoza
+trulicity:
+  - trulicity
+rybelsus:
+  - rybelsus
+glp1_generic:
+  - glp-1
+  - glp1
+  - weight-loss drug
+  - weight loss drug
+other_peptide:
+  - bpc-157
+  - survodutide
+  - cagrilintide
+
+# Dropped after measurement:
+#   oz       - already covered by ozempic; would also fire on ounces
+#   reta     - also starts retail / retain / retaliate
+#   mounjas  - Portuguese-corpus slang; this slice is English
+#   manjaro  - would match kilimanjaro
+#   the jab / weight loss shot / skinny shot - 0 hits here, and "the jab"
+#                is ambiguous with vaccine discourse

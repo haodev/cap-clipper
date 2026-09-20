@@ -1,3 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
 # Data lives outside the repo; never commit the source archive or intermediate files
 capclipper_data/
 *.parquet

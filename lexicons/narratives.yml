@@ -1,0 +1,104 @@
+# Narrative threads in the GLP-1 conversation. These are the "products"
+# CapClipper tracks over time, the way Camel tracks SKUs.
+#
+# Each entry carries its own display label so a theme discovered later is
+# self-describing. Entries below the `discovered by` marker were proposed by
+# scripts/gemini_narratives.py and kept only after their terms were checked
+# against the corpus. Nothing here is ever deleted by that script.
+culture_war:
+  label: Body-positivity culture war
+  terms:
+    - body positiv
+    - fat accept
+    - fatphob
+    - body image
+    - fat sham
+    - thinspo
+    - pro ana
+    - "died. funny how"
+    - ozempic hit the streets
+celebrity_watch:
+  label: Celebrity body surveillance
+  terms:
+    - celebrity
+    - celebrities
+    - hollywood
+    - red carpet
+    - our beloved stars
+    - ozempic face
+    - "look at what"
+    - before and after
+grey_market:
+  label: Grey-market peptides
+  terms:
+    - retatrutide
+    - " reta "
+    - glp-3r
+    - glp-2t
+    - research peptide
+    - peptides
+    - microdos
+    - in stock
+    - vial
+    - china factory
+    - whatsapp
+    - use code
+eating_disorder:
+  label: Eating-disorder adjacent
+  terms:
+    - thinspo
+    - pro ana
+    - anorexi
+    - bulimi
+    - purge
+    - restricting
+    - goal weight
+    - food noise
+    - "lbs"
+finance:
+  label: Investor and market angle
+  terms:
+    - "$nvo"
+    - "$lly"
+    - novo nordisk
+    - eli lilly
+    - shares
+    - earnings
+    - analyst
+    - price target
+    - market cap
+    - q1 sales
+diabetes_access:
+  label: Diabetes vs weight-loss access
+  terms:
+    - diabet
+    - type 2
+    - t1d
+    - insulin
+    - actually need it
+    - for diabetics
+    - people who need
+mockery:
+  label: Jokes and mockery
+  terms:
+    - lmao
+    - "lol"
+    - "😂"
+    - "🤣"
+    - imagine being
+    - funny how that works
+    - "💀"
+    - gross
+
+# --- discovered by scripts/gemini_narratives.py ---
+muscle_loss_supplements:
+  label: Muscle-loss fear and supplements
+  terms:
+    - muscle
+    - collagen
+    - protein
+    - muscle loss
+gastroparesis_awareness:
+  label: Gastroparesis awareness month
+  terms:
+    - gastroparesis

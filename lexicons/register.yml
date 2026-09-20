@@ -1,0 +1,29 @@
+# Cues that separate wire/news copy from first-person anecdote.
+# A cluster of identical news headlines is syndication, not astroturf.
+news:
+  - "researchers are"
+  - "a study finds"
+  - study finds
+  - according to
+  - reuters
+  - bloomberg
+  - "u.s. news"
+  - report says
+  - lawsuit claims
+  - "how to prevent"
+  - fda approves
+  - shares of
+  - analysts
+  - earnings
+  - is seeking to
+  - shifts strategy
+  - the company said
+first_person:
+  - " i "
+  - "i'm "
+  - "i’m "
+  - "i've "
+  - "i’ve "
+  - " my "
+  - " me "
+  - " im "

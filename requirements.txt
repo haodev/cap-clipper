@@ -1,0 +1,7 @@
+pyarrow>=17
+pandas>=2.2
+nltk>=3.9
+pyyaml>=6.0
+fastapi>=0.115
+uvicorn[standard]>=0.30
+certifi>=2024.2
