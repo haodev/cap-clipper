@@ -4,3 +4,20 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+# Data lives outside the repo; never commit the source archive or intermediate files
+capclipper_data/
+*.parquet
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Editors and OS
+.vscode/
+.DS_Store
+Thumbs.db
