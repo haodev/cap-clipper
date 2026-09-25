@@ -223,7 +223,7 @@ def build_anomalies(
             {
                 "id": "dominant_claim",
                 "narrative_type": "organic_virality",
-                "headline": f"One claim drove {share:.0%} of {window} GLP-1 volume"
+                "headline": f"One claim drove {share:.0%} of {window_label} GLP-1 volume"
                 if window_label == "range"
                 else "One claim drove a quarter of the day's GLP-1 volume",
                 "focus": {"type": "claim", "value": str(top_hash)},
